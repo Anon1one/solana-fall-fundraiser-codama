@@ -29,12 +29,12 @@ import { toWeb3Instruction } from "./helpers/kit-adapter";
 // ─── TODO 1 · import the client you generated ────────────────────────────────
 // Uncomment once `clients/js/src/generated/index.ts` exists.
 //
-// import {
-//   getFundraiserDecoder,
-//   getContributeInstruction,
-//   getContributeInstructionAsync,
-//   FUNDRAISER_PROGRAM_ADDRESS,
-// } from "../clients/js/src/generated";
+import {
+  getFundraiserDecoder,
+  getContributeInstruction,
+  getContributeInstructionAsync,
+  FUNDRAISER_PROGRAM_ADDRESS,
+} from "../clients/js/src/generated";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TARGET = 30_000_000; // 30 tokens on a 6-decimal mint
@@ -105,17 +105,16 @@ describe("codama", () => {
   // `program.account.fundraiser.fetch()` gives you. Note the types: Kit hands
   // you base58 strings for pubkeys and `bigint` for u64, not PublicKey / BN.
   it("TODO 1 · decodes the Fundraiser account with the generated decoder", async () => {
-    // assert.strictEqual(FUNDRAISER_PROGRAM_ADDRESS, program.programId.toBase58());
-    //
-    // const info = await provider.connection.getAccountInfo(fundraiser);
-    // const decoded = getFundraiserDecoder().decode(info.data);
-    // const viaAnchor = await program.account.fundraiser.fetch(fundraiser);
-    //
-    // assert.strictEqual(decoded.maker, maker.publicKey.toBase58());
-    // assert.strictEqual(decoded.amountToRaise, BigInt(TARGET));
-    // assert.strictEqual(decoded.currentAmount, BigInt(AMOUNT));
-    // assert.strictEqual(decoded.bump, viaAnchor.bump);
-    assert.fail("TODO 1: generate the client, uncomment the import at the top, then this body");
+    assert.strictEqual(FUNDRAISER_PROGRAM_ADDRESS, program.programId.toBase58());
+
+    const info = await provider.connection.getAccountInfo(fundraiser);
+    const decoded = getFundraiserDecoder().decode(info.data);
+    const viaAnchor = await program.account.fundraiser.fetch(fundraiser);
+
+    assert.strictEqual(decoded.maker, maker.publicKey.toBase58());
+    assert.strictEqual(decoded.amountToRaise, BigInt(TARGET));
+    assert.strictEqual(decoded.currentAmount, BigInt(AMOUNT));
+    assert.strictEqual(decoded.bump, viaAnchor.bump);
   });
 
   // ─── TODO 2 · encode ───────────────────────────────────────────────────────
@@ -139,24 +138,22 @@ describe("codama", () => {
       })
       .instruction();
 
-    // const kitIx = getContributeInstruction({
-    //   contributor: createNoopSigner(address(provider.publicKey.toBase58())),
-    //   mintToRaise: address(mint.toBase58()),
-    //   fundraiser: ...,
-    //   contributorAccount: ...,
-    //   contributorAta: ...,
-    //   vault: ...,
-    //   amount: AMOUNT,
-    // });
-    //
-    // assert.isTrue(Buffer.from(kitIx.data).equals(anchorIx.data), "instruction data differs");
-    // assert.deepStrictEqual(
-    //   kitIx.accounts.map((a) => a.address),
-    //   anchorIx.keys.map((k) => k.pubkey.toBase58()),
-    //   "account order differs",
-    // );
-    void anchorIx;
-    assert.fail("TODO 2: build the Kit instruction and compare it to anchorIx");
+    const kitIx = getContributeInstruction({
+      contributor: createNoopSigner(address(provider.publicKey.toBase58())),
+      mintToRaise: address(mint.toBase58()),
+      fundraiser: address(fundraiser.toBase58()),
+      contributorAccount: address(contributorAccount.toBase58()),
+      contributorAta: address(contributorAta.toBase58()),
+      vault: address(vault.toBase58()),
+      amount: AMOUNT,
+    });
+
+    assert.isTrue(Buffer.from(kitIx.data).equals(anchorIx.data), "instruction data differs");
+    assert.deepStrictEqual(
+      kitIx.accounts.map((a) => a.address),
+      anchorIx.keys.map((k) => k.pubkey.toBase58()),
+      "account order differs",
+    );
   });
 
   // ─── TODO 3 · resolution ───────────────────────────────────────────────────
@@ -169,18 +166,18 @@ describe("codama", () => {
   // programs/fundraiser/src/instructions/contribute.rs, and compare with the
   // same account in initialize.rs.)
   it("TODO 3 · resolves every account the IDL lets it derive", async () => {
-    // const ix = await getContributeInstructionAsync({
-    //   contributor: createNoopSigner(address(provider.publicKey.toBase58())),
-    //   mintToRaise: address(mint.toBase58()),
-    //   // ... only what the type forces you to pass ...
-    //   amount: AMOUNT,
-    // });
-    // const got = ix.accounts.map((a) => a.address);
-    //
-    // assert.strictEqual(got[3], contributorAccount.toBase58(), "contributorAccount");
-    // assert.strictEqual(got[4], contributorAta.toBase58(), "contributorAta");
-    // assert.strictEqual(got[6], TOKEN_PROGRAM_ID.toBase58(), "tokenProgram");
-    assert.fail("TODO 3: call getContributeInstructionAsync with the minimum input");
+    const ix = await getContributeInstructionAsync({
+      contributor: createNoopSigner(address(provider.publicKey.toBase58())),
+      mintToRaise: address(mint.toBase58()),
+      fundraiser: address(fundraiser.toBase58()),
+      vault: address(vault.toBase58()),
+      amount: AMOUNT,
+    });
+    const got = ix.accounts.map((a) => a.address);
+
+    assert.strictEqual(got[3], contributorAccount.toBase58(), "contributorAccount");
+    assert.strictEqual(got[4], contributorAta.toBase58(), "contributorAta");
+    assert.strictEqual(got[6], TOKEN_PROGRAM_ID.toBase58(), "tokenProgram");
   });
 
   // ─── BONUS · send it (optional) ────────────────────────────────────────────
@@ -189,11 +186,17 @@ describe("codama", () => {
   // other. Build the instruction from TODO 3 again, convert it, send it through
   // `provider.sendAndConfirm`, and assert the vault grew by exactly AMOUNT.
   // Change `it.skip` to `it` when you attempt it.
-  it.skip("BONUS · a Codama-built instruction goes through Anchor's provider", async () => {
+  it("BONUS · a Codama-built instruction goes through Anchor's provider", async () => {
     const before = BigInt((await provider.connection.getTokenAccountBalance(vault)).value.amount);
 
-    // const ix = await getContributeInstructionAsync({ ... });
-    // await provider.sendAndConfirm(new anchor.web3.Transaction().add(toWeb3Instruction(ix)));
+    const ix = await getContributeInstructionAsync({
+      contributor: createNoopSigner(address(provider.publicKey.toBase58())),
+      mintToRaise: address(mint.toBase58()),
+      fundraiser: address(fundraiser.toBase58()),
+      vault: address(vault.toBase58()),
+      amount: AMOUNT,
+    });
+    await provider.sendAndConfirm(new anchor.web3.Transaction().add(toWeb3Instruction(ix)));
 
     const after = BigInt((await provider.connection.getTokenAccountBalance(vault)).value.amount);
     assert.strictEqual(after - before, BigInt(AMOUNT));
